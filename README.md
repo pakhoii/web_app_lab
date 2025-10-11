@@ -1,2 +1,3 @@
-# web_app_lab1
-HCMIU Web Application Laboratory 1
+# HCMIU Web Application Laboratory
+---
+pakhoii's answers
