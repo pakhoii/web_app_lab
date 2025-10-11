@@ -55,5 +55,4 @@
 - How?
 	- `exercise1.html` includes a favicon link: `<link rel="icon" type="image/svg" href="./public/ChatGPT-Logo.wine.svg">`.
 	- The icon file sits in the `public/` folder relative to the HTML file. For broader browser support you can also provide PNG/favicon.ico variants and include sizes and type attributes.
-
 ---
