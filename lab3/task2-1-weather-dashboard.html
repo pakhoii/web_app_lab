@@ -141,46 +141,149 @@
         
         async function fetchWeather(city) {
             // TODO: Fetch current weather from API
-            
+            try {
+                const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric`);
+                if (!response.ok) {
+                    throw new Error('City not found');
+                }
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error fetching weather:', error);
+                throw error;
+            }
         }
         
         async function fetchForecast(city) {
             // TODO: Fetch 5-day forecast from API
+            try {
+                const response = await fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${API_KEY}&units=metric`);
+                if (!response.ok) {
+                    throw new Error('City not found');
+                }
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error fetching forecast:', error);
+                throw error;
+            }
         }
         
         function displayWeather(data) {
             // TODO: Display current weather
             // data.main.temp, data.weather[0].description
             // data.main.humidity, data.wind.speed
+            const weatherDisplay = document.getElementById('weatherDisplay');
+            weatherDisplay.innerHTML = 
+            ` 
+                <div class="weather-card">
+                    <div class="current-weather">
+                        <div>
+                            <h2>${data.name}, ${data.sys.country}</h2>
+                            <p style="text-transform: capitalize;">${data.weather[0].description}</p>
+                        </div>
+                        <div class="temp-display">${Math.round(data.main.temp)}°C</div>
+                    </div>
+                    <div style="margin-top: 20px;">
+                        <p>Humidity: ${data.main.humidity}%</p>
+                        <p>Wind Speed: ${data.wind.speed} m/s</p>
+                    </div>
+                </div>
+            `
         }
         
         function displayForecast(data) {
             // TODO: Display forecast (filter for one per day)
+            const forecastDisplay = document.getElementById('forecastDisplay');
+            let forecastHTML = '<div class="forecast-grid">';
+            const dailyData = {};
+            data.list.forEach(item => {
+                const date = new Date(item.dt_txt);
+                const day = date.toISOString().split('T')[0];
+                if (!dailyData[day] && date.getHours() === 12) {
+                    dailyData[day] = item;
+                }
+            });
+            Object.values(dailyData).forEach(item => {
+                const date = new Date(item.dt_txt);
+                forecastHTML += `
+                    <div class="forecast-item">
+                        <h3>${date.toDateString().split(' ')[0]}</h3>
+                        <p>${Math.round(item.main.temp)}°C</p>
+                    </div>
+                `;
+            });
+            forecastHTML += '</div>';
+            forecastDisplay.innerHTML = forecastHTML;
         }
         
         async function searchWeather() {
-            // TODO: Get city input and fetch weather
-            // TODO: Handle loading state
-            // TODO: Handle errors
-            // TODO: Save to recent searches
+            const city = document.getElementById("cityInput").value.trim();
+            if (!city) {
+                showError('Please enter a city name.');
+                return;
+            }
+
+            clearError();
+
+            try {
+                const weatherData = await fetchWeather(city);
+                displayWeather(weatherData);
+                
+                const forecastData = await fetchForecast(city);
+                displayForecast(forecastData);
+                
+                saveRecentSearch(city);
+                loadRecentSearches();
+            } catch (error) {
+                showError(error.message);
+            }
         }
         
         function saveRecentSearch(city) {
             // TODO: Save to localStorage (max 5 cities)
+            let recentSearches = JSON.parse(localStorage.getItem('recentSearches')) || [];
+            if (!recentSearches.includes(city)) {
+                recentSearches.push(city);
+                if (recentSearches.length > 5) {
+                    recentSearches.shift();
+                }
+                localStorage.setItem('recentSearches', JSON.stringify(recentSearches));
+            }
         }
         
         function loadRecentSearches() {
             // TODO: Load and display recent searches
+            const recentSearches = JSON.parse(localStorage.getItem('recentSearches')) || [];
+            const recentSearchesDiv = document.getElementById('recentSearches');
+            recentSearchesDiv.innerHTML = '';
+            recentSearches.forEach(city => {
+                const cityDiv = document.createElement('div');
+                cityDiv.className = 'recent-city';
+                cityDiv.textContent = city;
+                cityDiv.onclick = () => {
+                    document.getElementById('cityInput').value = city;
+                    searchWeather();
+                };
+                recentSearchesDiv.appendChild(cityDiv);
+            });
         }
         
         function showError(message) {
-            // TODO: Display error message
+            // Display error message
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.className = 'error';
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
         }
-        
+
         function clearError() {
-            // TODO: Clear error message
+            // Clear error message
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = '';
+            errorDiv.style.display = 'none';
         }
-        
+
         // Initialize
         loadRecentSearches();
     </script>
