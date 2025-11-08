@@ -105,7 +105,6 @@ This page (`add_student.jsp`) is the client-side form where users can enter new 
 
 #### What the user sees
 
-A simple HTML form with input validation, such as checking that the student code follows the correct pattern before submission.
 ![img_3.png](images/img_3.png)
 ---
 
