@@ -153,10 +153,10 @@ This page (`process_add.jsp`) runs on the server to handle the submitted data an
 ![img_4.png](images/img_4.png)
 
 #### Empty Required Fields
-![img_12.png](img_12.png)
+![img_12.png](images/img_12.png)
 
 #### Duplicate ID
-![img_13.png](img_13.png)
+![img_13.png](images/img_13.png)
 
 ## EXERCISE 3: UPDATE OPERATION
 ### Task 3.1: Create Edit Form
@@ -222,8 +222,7 @@ This page (`process_edit.jsp`) handles the server-side update operation.
 ![img_9.png](images/img_9.png)
 
 #### Invalid ID
-![img_14.png](img_14.png)
-![img_15.png](img_15.png)   
+![img_14.png](images/img_14.png)
 
 ---
 ## EXERCISE 4: DELETE OPERATION
