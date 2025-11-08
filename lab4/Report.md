@@ -3,13 +3,15 @@
 ## EXERCISE 1: SETUP AND DISPLAY
 ### Task 1.1. Project Setup
 - Create Project
-    ![img.png](img.png)
+
+    ![img.png](images/img.png)
 - Result
-    ![img_2.png](img_2.png)
+
+    ![img_2.png](images/img_2.png)
 
 ---
 ### Task 1.2. Display Student List
-![img_1.png](img_1.png)
+![img_1.png](images/img_1.png)
 #### How does the Code Works:
 - A connection to the database `student_management` from mysql server in port 3306.
     ```java
@@ -104,7 +106,7 @@ This page (`add_student.jsp`) is the client-side form where users can enter new 
 #### What the user sees
 
 A simple HTML form with input validation, such as checking that the student code follows the correct pattern before submission.
-![img_3.png](img_3.png)
+![img_3.png](images/img_3.png)
 ---
 
 ### Task 2.2: Process Add Student
@@ -143,11 +145,11 @@ This page (`process_add.jsp`) runs on the server to handle the submitted data an
 | 2    | Server reads and processes the data | Server (JSP)      | Executes SQL insert    |
 | 3    | Database confirms success           | Database → Server | Record is stored       |
 | 4    | Server redirects to list page       | Server → Client   | Updated list displayed |
-![img_5.png](img_5.png)
+![img_5.png](images/img_5.png)
 ---
 
 ### Final Result
-![img_4.png](img_4.png)
+![img_4.png](images/img_4.png)
 
 ---
 ## EXERCISE 3: UPDATE OPERATION
@@ -165,7 +167,7 @@ This page (`edit_student.jsp`) allows users to update an existing student’s in
 5. When the user edits the fields and clicks **Update**, the form data is sent using an HTTP `POST` request to `process_edit.jsp`.
 
 #### What the user sees
-![img_6.png](img_6.png)
+![img_6.png](images/img_6.png)
 
 ---
 
@@ -209,8 +211,8 @@ This page (`process_edit.jsp`) handles the server-side update operation.
 ---
 
 ### Final Result
-![img_8.png](img_8.png)
-![img_9.png](img_9.png)
+![img_8.png](images/img_8.png)
+![img_9.png](images/img_9.png)
 
 ---
 ## EXERCISE 4: DELETE OPERATION
@@ -260,5 +262,5 @@ This part handles deleting a student record from the database. The deletion is t
 ---
 
 ### Final Result
-![img_10.png](img_10.png)
-![img_11.png](img_11.png)
+![img_10.png](images/img_10.png)
+![img_11.png](images/img_11.png)
