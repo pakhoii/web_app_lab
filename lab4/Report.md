@@ -144,10 +144,12 @@ This page (`process_add.jsp`) runs on the server to handle the submitted data an
 | 2    | Server reads and processes the data | Server (JSP)      | Executes SQL insert    |
 | 3    | Database confirms success           | Database → Server | Record is stored       |
 | 4    | Server redirects to list page       | Server → Client   | Updated list displayed |
-![img_5.png](images/img_5.png)
+
 ---
 
-### Final Result
+### Test Cases:
+#### Valid Data
+![img_5.png](images/img_5.png)
 ![img_4.png](images/img_4.png)
 
 ---
