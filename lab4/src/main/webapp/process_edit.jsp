@@ -11,6 +11,14 @@
         return;
     }
 
+    if (email != null && !email.isEmpty()) {
+        if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+            // Invalid email format
+            response.sendRedirect("edit_student.jsp?error=Invalid email format");
+            return;
+        }
+    }
+
     int studentId = Integer.parseInt(idParam);
 
     Connection conn = null;

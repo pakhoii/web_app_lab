@@ -12,6 +12,22 @@
         return;
     }
 
+    if (email != null && !email.isEmpty()) {
+        if (!email.matches("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+            // Invalid email format
+            response.sendRedirect("add_student.jsp?error=Invalid email format");
+            return;
+        }
+    }
+
+    if (!studentCode.isEmpty()) {
+        if (!studentCode.matches("^[A-Z]{2}[0-9]{3,}")) {
+            response.sendRedirect("add_student.jsp?error=Invalid student code format");
+            return;
+        }
+    }
+
+
     Connection conn = null;
     PreparedStatement pstmt = null;
 

@@ -239,10 +239,10 @@ This part handles deleting a student record from the database. The deletion is t
 3. It executes an SQL `DELETE` command to remove the record:
 
    ```sql
-   DELETE FROM students WHERE id = ?;
+   DELETE FROM students WHERE Do Dang Thien Hai id = ?;
    ```
 4. If the deletion is successful, the user is redirected to `list_students.jsp` with a success message.
-5. If the student does not exist or an error occurs, an appropriate error message is displayed on the list page.
+5. If the student does not exist or an serror occurs, an appropriate error message is displayed on the list page.
 
 ---
 
@@ -274,3 +274,128 @@ This part handles deleting a student record from the database. The deletion is t
 ### Final Result
 ![img_10.png](images/img_10.png)
 ![img_11.png](images/img_11.png)
+
+---
+## EXERCISE 5 SEARCH FUNCTIONALITY
+### Task 5.1. Create Search Form
+Html code for search form, which is displayed for users.
+```html
+<form action="list_students.jsp" method="GET"
+        style="margin: 10px 0;">
+    <input type="text" name="keyword" placeholder="Search by name or code...">
+    <button type="submit">Search</button>
+    <a href="list_students.jsp">Clear</a>
+</form>
+```
+---
+### Task 5.2. Implement Search Logic
+```java
+if (keyword == null || keyword.trim().isEmpty()) {
+    pstmt = conn.prepareStatement(
+            "SELECT * FROM students ORDER BY id DESC LIMIT ?, ?"
+    );
+    pstmt.setInt(1, offset);
+    pstmt.setInt(2, recordsPerPage);
+} else {
+    pstmt = conn.prepareStatement(
+            "SELECT * FROM students WHERE full_name LIKE ? OR student_code LIKE ? ORDER BY id DESC LIMIT ?, ?"
+    );
+    String search = "%" + keyword + "%";
+    pstmt.setString(1, search);
+    pstmt.setString(2, search);
+    pstmt.setInt(3, offset);
+    pstmt.setInt(4, recordsPerPage);
+}
+
+rs = pstmt.executeQuery();
+```
+#### How does it work?
+1. Check if keyword is null (whether the user use the search bar)
+2. If user type something into search bar and enter, then execute the search functionality.
+3. Otherwise, return all the user to client side.
+
+#### Result
+![alt text](image.png)
+![alt text](image-1.png)
+![alt text](image-2.png)
+![alt text](image-3.png)
+![alt text](image-4.png)
+
+---
+## EXERCISE 6: VALIDATION ENHANCEMENT
+### Task 6.1: Email Validation
+#### Code
+
+```java
+if (email != null && !email.isEmpty()) {
+    if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+        // Invalid email format
+        response.sendRedirect("add_student.jsp?error=Invalid email format");
+        return;
+    }
+}
+```
+#### How does it work?
+1. When user press submit on the edit/add student form, these code will be called to validate the email.
+2. Check if the field is not empty, then check the email pattern.
+3. If it is a wrong pattern, then redirect to the form and log the error for the user.
+4. Otherwise, continue implement the remaining logic.
+
+#### Result
+![alt text](image-5.png)
+![alt text](image-6.png)
+![alt text](image-7.png)
+![alt text](image-8.png)
+
+---
+### Task 6.2: Student Code Pattern Validation
+#### Code
+```java
+if (!studentCode.isEmpty()) {
+    if (!studentCode.matches("^[A-Z]{2}[0-9]{3,}")) {
+        response.sendRedirect("add_student.jsp?error=Invalid student code format");
+        return;
+    }
+}
+```
+
+---
+## EXERCISE 7: USER EXPERIENCE IMPROVEMENTS
+### 7.1: Pagination
+#### How does it works
+1. When the user opens the student list page, the JSP file automatically triggers the backend code inside the page to load the student data from the database.
+
+2. The system reads the `page` parameter from the URL (for example: `list_students.jsp?page=3`).
+
+   * If the user does not specify a page, the system assumes page 1 by default.
+
+3. The system calculates how many records to skip based on which page is being viewed.
+
+   * Example: Page 3 → skip 20 records → offset = (3 − 1) × 10
+
+4. A COUNT query is executed to compute the total number of students in the database.
+
+   * This helps determine how many pages will be displayed.
+
+5. The main SELECT query uses `LIMIT` and `OFFSET` to load only 10 students for the current page.
+
+   * This improves performance and avoids loading thousands of rows at once.
+
+6. The table is rendered with only the limited data, showing the students belonging to the current page.
+
+7. The pagination bar is generated at the bottom of the page, including:
+
+   * Previous button
+   * Numbered page links
+   * Next button
+
+8. When the user clicks a page number or Previous/Next, the page reloads with a new `page` parameter, and the cycle repeats.
+
+#### Result
+![alt text](image-9.png)
+
+---
+### Task 7.2: Improved UI/UX
+![alt text](image-10.png)
+
+
