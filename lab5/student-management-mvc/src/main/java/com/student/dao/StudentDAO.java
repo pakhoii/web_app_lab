@@ -16,7 +16,7 @@ public class StudentDAO {
     private Connection getConnection() throws SQLException {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
-            System.out.println("Successful");
+//            System.out.println("Successful");
             return DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
         } catch (ClassNotFoundException e) {
             throw new SQLException("MySQL Driver not found", e);
@@ -42,7 +42,7 @@ public class StudentDAO {
                 student.setCreatedAt(rs.getTimestamp("created_at"));
                 students.add(student);
 
-                System.out.println(student.getFullName());
+//                System.out.println(student.getFullName());
             }
 
         } catch (SQLException e) {

@@ -33,7 +33,7 @@ public class StudentController extends HttpServlet {
             action = "list";
         }
 
-        System.out.println(action);
+//        System.out.println(action);
 
         switch (action) {
             case "new":
@@ -73,8 +73,9 @@ public class StudentController extends HttpServlet {
 
         List<Student> students = studentDAO.getAllStudents();
         request.setAttribute("students", students);
+        System.out.println("request: " + request.getAttribute("students"));
 
-        RequestDispatcher dispatcher = request.getRequestDispatcher("/views/student-list.jsp");
+        RequestDispatcher dispatcher = request.getRequestDispatcher("./views/student-list.jsp");
         dispatcher.forward(request, response);
     }
 
