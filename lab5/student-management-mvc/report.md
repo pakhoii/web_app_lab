@@ -498,7 +498,7 @@ public boolean updateStudent(Student student) { ... }
 * Called after submitting an edit form.
 * Controller uses the boolean result to redirect or show an error.
 
-**7. deleteStudent()**
+**4. deleteStudent()**
 
 ```java
 public boolean deleteStudent(int id) { ... }
