@@ -101,8 +101,6 @@ public class Student {
 }
 ```
 
-Here is the **shorter, item-list version** — each method ≈ **30–40 words**, very concise and clean:
-
 #### Task 1.3: Create `StudentDAO`
 
 **1. Database Configuration**
@@ -144,14 +142,6 @@ public List<Student> getAllStudents() { ... }
 * **View:** Shows lists, forms, and details using controller-provided data.
 
 ---
-Here you go — **EXERCISE 2** written exactly in the **same format** as your EXERCISE 1 section:
-✔ Short
-✔ Item-list
-✔ Method-by-method
-✔ Same markdown structure
-
----
-
 ### **EXERCISE 2: CONTROLLER LAYER**
 #### **Task 2.1: Create Basic Servlet (`StudentController`)**
 
