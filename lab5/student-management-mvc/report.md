@@ -535,3 +535,529 @@ public boolean deleteStudent(int id) { ... }
   - Should show "No students found" message
         ![Empty State](images/image-11.png)
 
+---
+### EXERCISE 5: SEARCH FUNCTIONALITY
+#### Task 5.1: Update StudentDAO
+**Code:**
+```java
+public List<Student> searchStudents(String keyword) {
+    List<Student> students = new ArrayList<>();
+
+    // Handle null or empty keyword
+    if (keyword == null || keyword.trim().isEmpty()) {
+        return students; // Return an empty list
+    }
+
+    String sql = "SELECT * FROM students WHERE student_code LIKE ? OR full_name LIKE ? OR email LIKE ? ORDER BY id DESC";
+    String searchPattern = "%" + keyword + "%";
+
+    try (Connection conn = getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+        pstmt.setString(1, searchPattern);
+        pstmt.setString(2, searchPattern);
+        pstmt.setString(3, searchPattern);
+
+        // Execute the query
+        try (ResultSet rs = pstmt.executeQuery()) {
+            while (rs.next()) {
+                Student student = new Student();
+                student.setId(rs.getInt("id"));
+                student.setStudentCode(rs.getString("student_code"));
+                student.setFullName(rs.getString("full_name"));
+                student.setEmail(rs.getString("email"));
+                student.setMajor(rs.getString("major"));
+                student.setCreatedAt(rs.getTimestamp("created_at"));
+                students.add(student);
+            }
+        }
+
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+
+    return students;
+}
+```
+**Explain:**
+- The `searchStudents` method is added to the `StudentDAO` class to query the database.
+- It constructs an SQL query that uses the `LIKE` operator to search across three columns: `student_code`, `full_name`, and `email`.
+- The input `keyword` is wrapped with (`%`) to create a search pattern that matches any part of the text.
+- Finally, returns a `List<Student>` that containing the search results, ordered by `id` in descending order.
+
+#### Task 5.2: Add Search Controller Method
+**Method to search student**
+```java
+private void searchStudents(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException {
+    String keyword = request.getParameter("keyword");
+    List<Student> students;
+
+    if (keyword != null && !keyword.trim().isEmpty()) {
+        students = studentDAO.searchStudents(keyword);
+    } else {
+        students = studentDAO.getAllStudents();
+    }
+
+    // 3. Set both students list and keyword as request attributes
+    // 'students' is for displaying the results
+    // 'keyword' is to keep the search term in the search box on the JSP page
+    request.setAttribute("students", students);
+    request.setAttribute("keyword", keyword);
+
+    RequestDispatcher dispatcher = request.getRequestDispatcher("./views/student-list.jsp");
+    dispatcher.forward(request, response);
+}
+```
+**Define new action to router:**
+```java
+switch (action) {
+    case "new":
+        showNewForm(request, response);
+        break;
+    case "edit":
+        showEditForm(request, response);
+        break;
+    case "delete":
+        deleteStudent(request, response);
+        break;
+    case "search":
+        searchStudents(request, response);
+    default:
+        listStudents(request, response);
+        break;
+}
+```
+**Explain:**
+- A new `case "search"` is added to the `switch` statement in the `doGet` method to route requests with `action=search`.
+- This case calls the new private method `searchStudents()`, which handles the search logic.
+- The `searchStudents()` method retrieves the `keyword` parameter from the incoming request.
+- It conditionally calls the DAO: if the `keyword` is not empty, it calls `studentDAO.searchStudents()`; otherwise, it calls `studentDAO.getAllStudents()`.
+- It sets two request attributes: `students` to pass the result list, and `keyword` to preserve the search term in the view's input field.
+- Finally, it forwards the request to the view (`student-list.jsp`) page to display the results.
+
+#### Task 5.3: Update Student List View
+![alt text](images/image-13.png)
+
+#### Result
+![alt text](images/image-12.png)
+
+---
+### EXERCISE 6: SERVER-SIDE VALIDATION
+#### Task 6.1: Create Validation Method
+**Code:**
+```java
+private boolean validateStudent(Student student, HttpServletRequest request) {
+    boolean isValid = true;
+
+    String codePattern = "[A-Z]{2}[0-9]{3,}";
+    String emailPattern = "^[A-Za-z0-9+_.-]+@(.+)$";
+
+    // Validate Student Code
+    if (student.getStudentCode() == null || student.getStudentCode().trim().isEmpty()) {
+        request.setAttribute("errorCode", "Student code is required");
+        isValid = false;
+    } else if (!student.getStudentCode().trim().matches(codePattern)) {
+        request.setAttribute("errorCode", "Invalid format. Use 2 uppercase letters + 3+ digits (e.g., SV001)");
+        isValid = false;
+    }
+
+    // Validate Full Name
+    if (student.getFullName() == null || student.getFullName().trim().isEmpty()) {
+        request.setAttribute("errorName", "Full name is required");
+        isValid = false;
+    } else if (student.getFullName().trim().length() < 2) {
+        request.setAttribute("errorName", "Full name must be at least 2 characters long");
+        isValid = false;
+    }
+
+    // Validate Email (only if it's not empty)
+    String email = student.getEmail();
+    if (email != null && !email.trim().isEmpty()) {
+        if (!email.trim().matches(emailPattern)) {
+            request.setAttribute("errorEmail", "Please enter a valid email address");
+            isValid = false;
+        }
+    }
+
+    // Validate Major
+    if (student.getMajor() == null || student.getMajor().trim().isEmpty()) {
+        request.setAttribute("errorMajor", "Major is required");
+        isValid = false;
+    }
+
+    return isValid;
+}
+```
+**Explain:**
+- The `validateStudent` method is created to centralize all validation logic for a `Student` object.
+- It returns `true` for valid data and `false` if any rule is violated.
+- When a validation rule fails, it uses `request.setAttribute` to set a specific error message (e.g., `errorCode`, `errorName`). These attributes will be used by the JSP to display errors.
+- **Student Code** is validated for emptiness and against a regex pattern (`[A-Z]{2}[0-9]{3,}`).
+- **Full Name** is validated for emptiness and a minimum length of 2 characters.
+- **Email** format is validated using regex, but only if the field is not empty.
+- **Major** is checked to ensure it is not null or empty.
+
+#### Task 6.2: Integrate Validation into Insert/Update
+```java
+// Insert new student
+private void insertStudent(HttpServletRequest request, HttpServletResponse response)
+        throws IOException, ServletException {
+
+    String studentCode = request.getParameter("studentCode");
+    String fullName = request.getParameter("fullName");
+    String email = request.getParameter("email");
+    String major = request.getParameter("major");
+
+    Student newStudent = new Student(studentCode, fullName, email, major);
+
+    if (!validateStudent(newStudent, request)) {
+        request.setAttribute("student", newStudent);
+        RequestDispatcher dispatcher = request.getRequestDispatcher("/views/student-form.jsp");
+        dispatcher. forward(request, response);
+        return;
+    }
+
+    if (studentDAO.addStudent(newStudent)) {
+        response.sendRedirect("student?action=list&message=Student added successfully");
+    } else {
+        response.sendRedirect("student?action=list&error=Failed to add student");
+    }
+}
+
+// Update student
+private void updateStudent(HttpServletRequest request, HttpServletResponse response)
+        throws IOException, ServletException {
+
+    int id = Integer.parseInt(request.getParameter("id"));
+    String studentCode = request.getParameter("studentCode");
+    String fullName = request.getParameter("fullName");
+    String email = request.getParameter("email");
+    String major = request.getParameter("major");
+
+    Student student = new Student(studentCode, fullName, email, major);
+    student.setId(id);
+
+    if (!validateStudent(student, request)) {
+        request.setAttribute("student", student);
+        RequestDispatcher dispatcher = request.getRequestDispatcher("/views/student-form.jsp");
+        dispatcher.forward(request, response);
+        return;
+    }
+
+    if (studentDAO.updateStudent(student)) {
+        response.sendRedirect("student?action=list&message=Student updated successfully");
+    } else {
+        response.sendRedirect("student?action=list&error=Failed to update student");
+    }
+}
+```
+**Explain:**
+- Both `insertStudent` and `updateStudent` methods are updated to call `validateStudent` before performing any database operations.
+- If `validateStudent` returns `false` (indicating an error):
+    - The `student` object with the user's entered data is put back into the request using `request.setAttribute`. This is done to preserve the data and re-populate the form fields.
+    - The request is **forwarded** (not redirected) back to `student-form.jsp`, which allows the error messages and the student data to be passed to the view.
+    - The `return` statement is used to stop the method's execution immediately, preventing the invalid data from being sent to the DAO.
+- If validation passes (`true`), the code proceeds to call the DAO to save the data and then redirects the user to the student list.
+
+#### Task 6.3: Display Validation Errors in Form
+![alt text](images/image-15.png)
+
+---
+### EXERCISE 7: SORTING & FILTERING
+#### Task 7.1: Add Sort & Filter Methods to DAO
+**Code**
+```java
+public List<Student> getStudentsSorted(String sortBy, String order) {
+    List<Student> students = new ArrayList<>();
+
+    String safeSortBy = validateSortBy(sortBy);
+    String safeOrder = validateOrder(order);
+
+    String sql = "SELECT * FROM students ORDER BY " + safeSortBy + " " + safeOrder;
+
+    try (Connection conn = getConnection();
+            Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery(sql)) {
+
+        while (rs.next()) {
+            students.add(mapRowToStudent(rs));
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+    return students;
+}
+
+public List<Student> getStudentsByMajor(String major) {
+    List<Student> students = new ArrayList<>();
+    String sql = "SELECT * FROM students WHERE major = ? ORDER BY id DESC";
+
+    try (Connection conn = getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+        pstmt.setString(1, major);
+
+        try (ResultSet rs = pstmt.executeQuery()) {
+            while (rs.next()) {
+                students.add(mapRowToStudent(rs));
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+    return students;
+}
+
+public List<Student> getStudentsFilteredAndSorted(String major, String sortBy, String order) {
+    List<Student> students = new ArrayList<>();
+
+    // Validate sort parameters
+    String safeSortBy = validateSortBy(sortBy);
+    String safeOrder = validateOrder(order);
+
+    // Use StringBuilder to dynamically build the query
+    StringBuilder sql = new StringBuilder("SELECT * FROM students");
+    List<Object> params = new ArrayList<>();
+
+    // Add WHERE clause if major is provided
+    if (major != null && !major.trim().isEmpty()) {
+        sql.append(" WHERE major = ?");
+        params.add(major);
+    }
+
+    // Add ORDER BY clause
+    sql.append(" ORDER BY ").append(safeSortBy).append(" ").append(safeOrder);
+
+    try (Connection conn = getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
+
+        if (!params.isEmpty()) {
+            pstmt.setString(1, (String) params.get(0));
+        }
+
+        try (ResultSet rs = pstmt.executeQuery()) {
+            while (rs.next()) {
+                students.add(mapRowToStudent(rs));
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+    return students;
+}
+
+private String validateSortBy(String sortBy) {
+    if (sortBy == null || sortBy.trim().isEmpty()) {
+        return "id";
+    }
+    List<String> validColumns = Arrays.asList("id", "student_code", "full_name", "email", "major");
+    if (validColumns.contains(sortBy.toLowerCase())) {
+        return sortBy;
+    }
+    return "id";
+}
+
+
+private String validateOrder(String order) {
+    if ("desc".equalsIgnoreCase(order)) {
+        return "DESC";
+    }
+    return "ASC";
+}
+
+private Student mapRowToStudent(ResultSet rs) throws SQLException {
+    Student student = new Student();
+    student.setId(rs.getInt("id"));
+    student.setStudentCode(rs.getString("student_code"));
+    student.setFullName(rs.getString("full_name"));
+    student.setEmail(rs.getString("email"));
+    student.setMajor(rs.getString("major"));
+    student.setCreatedAt(rs.getTimestamp("created_at"));
+    return student;
+}
+```
+**Explain:**
+- `getStudentsSorted`: This method builds a dynamic SQL `ORDER BY` clause. To prevent SQL Injection, it uses helper methods (`validateSortBy`, `validateOrder`) to ensure that the column name and sort order are from a safe, predefined list before concatenating them into the query.
+- `getStudentsByMajor`: This method uses a `PreparedStatement` with a `WHERE` clause to securely filter students by their major.
+- `getStudentsFilteredAndSorted`: The bonus method combines both functionalities. It uses a `StringBuilder` to conditionally add a `WHERE` clause if a major is provided, and then appends the validated `ORDER BY` clause. This allows for a single, powerful query method.
+
+#### Task 7.2: 
+**Code:**
+```java
+private void sortStudents(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException {
+
+    // Get sort parameters from the request
+    String sortBy = request.getParameter("sortBy");
+    String order = request.getParameter("order");
+
+    // Call the DAO method to get the sorted list
+    List<Student> students = studentDAO.getStudentsSorted(sortBy, order);
+
+    // Set attributes for the view
+    // 'students' for the table data
+    // 'sortBy' and 'order' to help the view indicate the current sort state
+    request.setAttribute("students", students);
+    request.setAttribute("sortBy", sortBy);
+    request.setAttribute("order", order);
+
+    // Forward to the list view
+    RequestDispatcher dispatcher = request.getRequestDispatcher("./views/student-list.jsp");
+    dispatcher.forward(request, response);
+}
+
+private void filterStudents(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException {
+
+    // Get filter parameter from the request
+    String major = request.getParameter("filterMajor");
+    List<Student> students;
+
+    // Decide which DAO method to call
+    // If major is null or empty, it means "All Majors" was selected
+    if (major != null && !major.isEmpty()) {
+        students = studentDAO.getStudentsByMajor(major);
+    } else {
+        // If no major is selected, get all students
+        students = studentDAO.getAllStudents();
+    }
+
+    // Set attributes for the view
+    // 'students' for the table data
+    // 'filterMajor' to keep the dropdown selected on the chosen major
+    request.setAttribute("students", students);
+    request.setAttribute("filterMajor", major);
+
+    // Forward to the list view
+    RequestDispatcher dispatcher = request.getRequestDispatcher("./views/student-list.jsp");
+    dispatcher.forward(request, response);
+}
+```
+**Explain:**
+- `sortStudents`: This method retrieves the `sortBy` and `order` parameters from the request, calls the corresponding DAO method, and then sets the resulting student list as a request attribute. Crucially, it also sets the `sortBy` and `order` parameters back into the request so the view can display the current sorting state.
+- `filterStudents`: This method gets the `filterMajor` parameter. If a major is selected, it calls the `getStudentsByMajor` DAO method. If not (i.e., "All Majors" is selected), it calls `getAllStudents`. It sets both the student list and the `filterMajor` value as request attributes to preserve the dropdown's selection on the view.
+- Both methods finish by forwarding the request to `student-list.jsp` to display the updated data.
+
+#### Task 7.3: Update View with Sort & Filter UI
+**Filter:**
+![alt text](images/image-16.png)
+![alt text](images/image-17.png)
+
+**Sort:**
+![alt text](images/image-18.png)
+![alt text](images/image-19.png)
+
+---
+### EXERCISE 8: PAGINATION
+#### Task 8.1: Add Pagination Methods to DAO
+**Code:**
+```java
+public int getTotalStudents() {
+    int count = 0;
+    String sql = "SELECT COUNT(id) FROM students";
+
+    try (Connection conn = getConnection();
+            Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery(sql)) {
+
+        // The result set for a COUNT query will have one row.
+        if (rs.next()) {
+            // Get the count from the first column.
+            count = rs.getInt(1);
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+    return count;
+}
+
+public List<Student> getStudentsPaginated(int offset, int limit) {
+    List<Student> students = new ArrayList<>();
+    // The SQL syntax for pagination in MySQL is LIMIT <limit> OFFSET <offset>
+    String sql = "SELECT * FROM students ORDER BY id DESC LIMIT ? OFFSET ?";
+
+    try (Connection conn = getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+        // Set the parameters for LIMIT and OFFSET
+        pstmt.setInt(1, limit);
+        pstmt.setInt(2, offset);
+
+        try (ResultSet rs = pstmt.executeQuery()) {
+            while (rs.next()) {
+                // Reuse the existing helper method to map the row to a Student object
+                students.add(mapRowToStudent(rs));
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+    return students;
+}
+```
+**Explain:**
+- `getTotalStudents()` runs a `SELECT COUNT(*)` query to get the total number of students, necessary for calculating the total number of pages.
+- `getStudentsPaginated()` fetches a specific subset of records (a "page") using a PreparedStatement with `LIMIT` and `OFFSET` clauses for efficient and secure data retrieval.
+
+#### Task 8.2: Add Pagination Controller Logic
+**Code:**
+```java
+private void listStudents(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException {
+    // Define records per page
+    int recordsPerPage = 10;
+
+    // Get the current page number from the request parameter
+    int currentPage = 1; // Default to page 1
+    String pageParam = request.getParameter("page");
+    if (pageParam != null) {
+        try {
+            currentPage = Integer.parseInt(pageParam);
+        } catch (NumberFormatException e) {
+            // If the parameter is not a valid number, default to page 1
+            currentPage = 1;
+        }
+    }
+
+    // Get total records to calculate total pages
+    int totalRecords = studentDAO.getTotalStudents();
+    int totalPages = (int) Math.ceil((double) totalRecords / recordsPerPage);
+
+    // Handle edge cases for page numbers
+    // Ensure currentPage is not less than 1
+    if (currentPage < 1) {
+        currentPage = 1;
+    }
+    // Ensure currentPage does not exceed totalPages (if there are any pages)
+    if (totalPages > 0 && currentPage > totalPages) {
+        currentPage = totalPages;
+    }
+
+    // Calculate the offset for the SQL query
+    // The offset is the starting index for the records on the current page
+    int offset = (currentPage - 1) * recordsPerPage;
+
+    // Get the paginated list of students from the DAO
+    List<Student> students = studentDAO.getStudentsPaginated(offset, recordsPerPage);
+
+    // Set all necessary attributes for the view (JSP)
+    request.setAttribute("students", students);
+    request.setAttribute("currentPage", currentPage);
+    request.setAttribute("totalPages", totalPages);
+
+    // Forward the request to the view
+    RequestDispatcher dispatcher = request.getRequestDispatcher("./views/student-list.jsp");
+    dispatcher.forward(request, response);
+}
+```
+
+**Explain:**
+- The `listStudents()` method in the controller is updated to manage pagination logic.
+- It reads the page parameter, calculates `totalPages` using the count from the DAO, and computes the offset for the database query.
+- It calls the new `getStudentsPaginated()` DAO method to fetch only the students for the current page.
+- Finally, it sets three essential attributes (`students, currentPage, totalPages`) for the JSP to use when rendering the pagination controls.
+
+#### Task 8.3: Add Pagination Controls to View
+![alt text](images/image-20.png)
+![alt text](images/image-21.png)

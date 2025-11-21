@@ -26,7 +26,7 @@
             background: white;
             border-radius: 10px;
             padding: 30px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
         }
 
         h1 {
@@ -98,18 +98,75 @@
             background-color: #c82333;
         }
 
+        .controls-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .controls-left {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .search-form,
+        .filter-form {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .search-input,
+        .filter-select {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .search-input {
+            width: 250px;
+        }
+
+        .btn-action {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .btn-clear {
+            text-decoration: none;
+            color: #007bff;
+            font-weight: 500;
+        }
+
+        .search-results-info {
+            background-color: #e9ecef;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            color: #495057;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
         }
 
         thead {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
         }
 
-        th, td {
+        th,
+        td {
             padding: 15px;
             text-align: left;
             border-bottom: 1px solid #ddd;
@@ -120,6 +177,19 @@
             text-transform: uppercase;
             font-size: 13px;
             letter-spacing: 0.5px;
+        }
+
+        th a {
+            color: white;
+            text-decoration: none;
+        }
+
+        th a:hover {
+            text-decoration: underline;
+        }
+
+        .sort-indicator {
+            margin-left: 5px;
         }
 
         tbody tr {
@@ -145,6 +215,46 @@
             font-size: 64px;
             margin-bottom: 20px;
         }
+
+        .pagination-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .pagination {
+            display: flex;
+            gap: 5px;
+        }
+        .pagination a, .pagination span {
+            display: inline-block;
+            padding: 8px 14px;
+            text-decoration: none;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            color: #337ab7;
+            transition: background-color 0.2s;
+        }
+        .pagination a:hover {
+            background-color: #f0f0f0;
+        }
+        .pagination .active {
+            background-color: #667eea;
+            color: white;
+            border-color: #667eea;
+            font-weight: bold;
+        }
+        .pagination .disabled {
+            color: #ccc;
+            pointer-events: none;
+            border-color: #eee;
+        }
+        .page-info {
+            color: #666;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -152,38 +262,85 @@
     <h1>📚 Student Management System</h1>
     <p class="subtitle">MVC Pattern with Jakarta EE & JSTL</p>
 
-    <!-- Success Message -->
     <c:if test="${not empty param.message}">
-        <div class="message success">
-            ✅ ${param.message}
-        </div>
+        <div class="message success">✅ ${param.message}</div>
     </c:if>
-
-    <!-- Error Message -->
     <c:if test="${not empty param.error}">
-        <div class="message error">
-            ❌ ${param.error}
-        </div>
+        <div class="message error">❌ ${param.error}</div>
     </c:if>
 
-    <!-- Add New Student Button -->
-    <div style="margin-bottom: 20px;">
-        <a href="student?action=new" class="btn btn-primary">
-            ➕ Add New Student
-        </a>
+    <div class="controls-container">
+        <div class="controls-left">
+            <a href="student?action=new" class="btn btn-primary">➕ Add New Student</a>
+
+            <form action="student" method="get" class="filter-form">
+                <input type="hidden" name="action" value="filter">
+                <select name="filterMajor" class="filter-select" onchange="this.form.submit()">
+                    <option value="">-- All Majors --</option>
+                    <option value="Computer Science" ${filterMajor == 'Computer Science' ? 'selected' : ''}>Computer Science</option>
+                    <option value="Information Technology" ${filterMajor == 'Information Technology' ? 'selected' : ''}>Information Technology</option>
+                    <option value="Software Engineering" ${filterMajor == 'Software Engineering' ? 'selected' : ''}>Software Engineering</option>
+                    <option value="Business Administration" ${filterMajor == 'Business Administration' ? 'selected' : ''}>Business Administration</option>
+                </select>
+                <c:if test="${not empty filterMajor}">
+                    <a href="student?action=list" class="btn-clear">Clear Filter</a>
+                </c:if>
+            </form>
+        </div>
+
+        <form action="student" method="get" class="search-form">
+            <input type="hidden" name="action" value="search">
+            <input type="text" name="keyword" class="search-input" placeholder="Search by code, name, email..." value="<c:out value='${keyword}'/>">
+            <button type="submit" class="btn-action">🔍</button>
+            <c:if test="${not empty keyword}">
+                <a href="student?action=list" class="btn-clear">Clear Search</a>
+            </c:if>
+        </form>
     </div>
 
-    <!-- Student Table -->
+    <c:if test="${not empty keyword}">
+        <h4 class="search-results-info">Search results for: "<strong><c:out value="${keyword}"/></strong>"</h4>
+    </c:if>
+    <c:if test="${not empty filterMajor}">
+        <h4 class="search-results-info">Filtered by Major: <strong>${filterMajor}</strong></h4>
+    </c:if>
+
     <c:choose>
         <c:when test="${not empty students}">
             <table>
                 <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Student Code</th>
-                    <th>Full Name</th>
-                    <th>Email</th>
-                    <th>Major</th>
+                    <c:set var="nextOrder" value="${(sortBy != null && order == 'asc') ? 'desc' : 'asc'}" />
+                    <th>
+                        <a href="student?action=sort&sortBy=id&order=${sortBy == 'id' ? nextOrder : 'asc'}">
+                            ID
+                            <c:if test="${sortBy == 'id'}"><span class="sort-indicator">${order == 'asc' ? '▲' : '▼'}</span></c:if>
+                        </a>
+                    </th>
+                    <th>
+                        <a href="student?action=sort&sortBy=student_code&order=${sortBy == 'student_code' ? nextOrder : 'asc'}">
+                            Student Code
+                            <c:if test="${sortBy == 'student_code'}"><span class="sort-indicator">${order == 'asc' ? '▲' : '▼'}</span></c:if>
+                        </a>
+                    </th>
+                    <th>
+                        <a href="student?action=sort&sortBy=full_name&order=${sortBy == 'full_name' ? nextOrder : 'asc'}">
+                            Full Name
+                            <c:if test="${sortBy == 'full_name'}"><span class="sort-indicator">${order == 'asc' ? '▲' : '▼'}</span></c:if>
+                        </a>
+                    </th>
+                    <th>
+                        <a href="student?action=sort&sortBy=email&order=${sortBy == 'email' ? nextOrder : 'asc'}">
+                            Email
+                            <c:if test="${sortBy == 'email'}"><span class="sort-indicator">${order == 'asc' ? '▲' : '▼'}</span></c:if>
+                        </a>
+                    </th>
+                    <th>
+                        <a href="student?action=sort&sortBy=major&order=${sortBy == 'major' ? nextOrder : 'asc'}">
+                            Major
+                            <c:if test="${sortBy == 'major'}"><span class="sort-indicator">${order == 'asc' ? '▲' : '▼'}</span></c:if>
+                        </a>
+                    </th>
                     <th>Actions</th>
                 </tr>
                 </thead>
@@ -197,26 +354,67 @@
                         <td>${student.major}</td>
                         <td>
                             <div class="actions">
-                                <a href="student?action=edit&id=${student.id}" class="btn btn-secondary">
-                                    ✏️ Edit
-                                </a>
-                                <a href="student?action=delete&id=${student.id}"
-                                   class="btn btn-danger"
-                                   onclick="return confirm('Are you sure you want to delete this student?')">
-                                    🗑️ Delete
-                                </a>
+                                <a href="student?action=edit&id=${student.id}" class="btn btn-secondary">✏️ Edit</a>
+                                <a href="student?action=delete&id=${student.id}" class="btn btn-danger" onclick="return confirm('Are you sure?')">🗑️ Delete</a>
                             </div>
                         </td>
                     </tr>
                 </c:forEach>
                 </tbody>
             </table>
+
+            <c:if test="${totalPages > 1}">
+                <div class="pagination-container">
+                    <div class="page-info">
+                        Showing page <strong>${currentPage}</strong> of <strong>${totalPages}</strong>
+                    </div>
+
+                    <div class="pagination">
+                        <!-- Previous Button -->
+                        <c:choose>
+                            <c:when test="${currentPage > 1}">
+                                <a href="student?action=list&page=${currentPage - 1}">« Previous</a>
+                            </c:when>
+                            <c:otherwise>
+                                <span class="disabled">« Previous</span>
+                            </c:otherwise>
+                        </c:choose>
+
+                        <!-- Page Numbers -->
+                        <c:forEach begin="1" end="${totalPages}" var="i">
+                            <a href="student?action=list&page=${i}" class="${i == currentPage ? 'active' : ''}">${i}</a>
+                        </c:forEach>
+
+                        <!-- Next Button -->
+                        <c:choose>
+                            <c:when test="${currentPage < totalPages}">
+                                <a href="student?action=list&page=${currentPage + 1}">Next »</a>
+                            </c:when>
+                            <c:otherwise>
+                                <span class="disabled">Next »</span>
+                            </c:otherwise>
+                        </c:choose>
+                    </div>
+                </div>
+            </c:if>
         </c:when>
         <c:otherwise>
             <div class="empty-state">
                 <div class="empty-state-icon">📭</div>
-                <h3>No students found</h3>
-                <p>Start by adding a new student</p>
+                <c:choose>
+                    <c:when test="${not empty keyword}">
+                        <h3>No students found for "<c:out value="${keyword}"/>"</h3>
+                        <p>Try searching with a different keyword or clear the search.</p>
+                    </c:when>
+                    <c:when test="${not empty filterMajor}">
+                        <h3>No students found in the major "${filterMajor}"</h3>
+                        <p>Try selecting a different major or clearing the filter.</p>
+                    </c:when>
+                    <c:otherwise>
+                        <h3>No students found</h3>
+                        <p>Start by adding a new student.</p>
+                    </c:otherwise>
+                </c:choose>
             </div>
         </c:otherwise>
     </c:choose>

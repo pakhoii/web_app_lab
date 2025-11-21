@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>
         <c:choose>
-            <c:when test="${student != null}">Edit Student</c:when>
+            <c:when test="${student != null && student.id > 0}">Edit Student</c:when>
             <c:otherwise>Add New Student</c:otherwise>
         </c:choose>
     </title>
@@ -77,6 +77,18 @@
             color: #dc3545;
         }
 
+        .error-message {
+            color: #dc3545;
+            font-size: 13px;
+            display: block;
+            margin-top: 5px;
+            font-weight: 500;
+        }
+        
+        .input-error {
+            border-color: #dc3545 !important;
+        }
+
         .button-group {
             display: flex;
             gap: 15px;
@@ -127,7 +139,7 @@
 <div class="container">
     <h1>
         <c:choose>
-            <c:when test="${student != null}">
+            <c:when test="${student != null && student.id > 0}">
                 ✏️ Edit Student
             </c:when>
             <c:otherwise>
@@ -139,10 +151,10 @@
     <form action="student" method="POST">
         <!-- Hidden field for action -->
         <input type="hidden" name="action"
-               value="${student != null ? 'update' : 'insert'}">
+               value="${student != null && student.id > 0 ? 'update' : 'insert'}">
 
         <!-- Hidden field for ID (only for update) -->
-        <c:if test="${student != null}">
+        <c:if test="${student != null && student.id > 0}">
             <input type="hidden" name="id" value="${student.id}">
         </c:if>
 
@@ -154,10 +166,16 @@
             <input type="text"
                    id="studentCode"
                    name="studentCode"
-                   value="${student.studentCode}"
-            ${student != null ? 'readonly' : 'required'}
+                   value="<c:out value='${student.studentCode}'/>"
+            ${student != null && student.id > 0 ? 'readonly' : ''}
+                   class="${not empty errorCode ? 'input-error' : ''}"
                    placeholder="e.g., SV001, IT123">
-            <p class="info-text">Format: 2 letters + 3+ digits</p>
+            <p class="info-text">Format: 2 uppercase letters + 3+ digits</p>
+
+            <!-- Display Student Code Error -->
+            <c:if test="${not empty errorCode}">
+                <span class="error-message">${errorCode}</span>
+            </c:if>
         </div>
 
         <!-- Full Name -->
@@ -168,22 +186,30 @@
             <input type="text"
                    id="fullName"
                    name="fullName"
-                   value="${student.fullName}"
-                   required
+                   value="<c:out value='${student.fullName}'/>"
+                   class="${not empty errorName ? 'input-error' : ''}"
                    placeholder="Enter full name">
+
+            <!-- Display Full Name Error -->
+            <c:if test="${not empty errorName}">
+                <span class="error-message">${errorName}</span>
+            </c:if>
         </div>
 
         <!-- Email -->
         <div class="form-group">
-            <label for="email">
-                Email <span class="required">*</span>
-            </label>
+            <label for="email">Email</label>
             <input type="email"
                    id="email"
                    name="email"
-                   value="${student.email}"
-                   required
+                   value="<c:out value='${student.email}'/>"
+                   class="${not empty errorEmail ? 'input-error' : ''}"
                    placeholder="student@example.com">
+
+            <!-- Display Email Error -->
+            <c:if test="${not empty errorEmail}">
+                <span class="error-message">${errorEmail}</span>
+            </c:if>
         </div>
 
         <!-- Major -->
@@ -191,32 +217,33 @@
             <label for="major">
                 Major <span class="required">*</span>
             </label>
-            <select id="major" name="major" required>
+            <select id="major" name="major" class="${not empty errorMajor ? 'input-error' : ''}">
                 <option value="">-- Select Major --</option>
-                <option value="Computer Science"
-                ${student.major == 'Computer Science' ? 'selected' : ''}>
+                <option value="Computer Science" ${student.major == 'Computer Science' ? 'selected' : ''}>
                     Computer Science
                 </option>
-                <option value="Information Technology"
-                ${student.major == 'Information Technology' ? 'selected' : ''}>
+                <option value="Information Technology" ${student.major == 'Information Technology' ? 'selected' : ''}>
                     Information Technology
                 </option>
-                <option value="Software Engineering"
-                ${student.major == 'Software Engineering' ? 'selected' : ''}>
+                <option value="Software Engineering" ${student.major == 'Software Engineering' ? 'selected' : ''}>
                     Software Engineering
                 </option>
-                <option value="Business Administration"
-                ${student.major == 'Business Administration' ? 'selected' : ''}>
+                <option value="Business Administration" ${student.major == 'Business Administration' ? 'selected' : ''}>
                     Business Administration
                 </option>
             </select>
+
+            <!-- Display Major Error -->
+            <c:if test="${not empty errorMajor}">
+                <span class="error-message">${errorMajor}</span>
+            </c:if>
         </div>
 
         <!-- Buttons -->
         <div class="button-group">
             <button type="submit" class="btn btn-primary">
                 <c:choose>
-                    <c:when test="${student != null}">
+                    <c:when test="${student != null && student.id > 0}">
                         💾 Update Student
                     </c:when>
                     <c:otherwise>
