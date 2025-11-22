@@ -9,7 +9,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="cf6e9c42-cc34-41d6-ade6-3d342c39068c" name="Changes" comment="" />
+    <list default="true" id="cf6e9c42-cc34-41d6-ade6-3d342c39068c" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/../../lab5/student-management-mvc/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../../lab5/student-management-mvc/.idea/workspace.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -43,6 +45,7 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "Application.CreateUser.executor": "Run",
     "Maven. [org.apache.maven.plugins:maven-archetype-plugin:RELEASE:generate].executor": "Run",
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
@@ -78,9 +81,15 @@
       </map>
     </option>
   </component>
-  <component name="RunManager">
+  <component name="RunManager" selected="Application.CreateUser">
+    <configuration name="CreateUser" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="CreateUser" />
+      <module name="student-management-mvc" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="Tomcat 10.1.48" type="#com.intellij.j2ee.web.tomcat.TomcatRunConfigurationFactory" factoryName="Local" APPLICATION_SERVER_NAME="Tomcat 10.1.48" ALTERNATIVE_JRE_ENABLED="false" nameIsGenerated="true">
-      <option name="UPDATE_ON_FRAME_DEACTIVATION" value="true" />
       <option name="UPDATING_POLICY" value="restart-server" />
       <deployment>
         <artifact name="student-management-mvc:war exploded">
@@ -167,6 +176,15 @@
         </option>
       </method>
     </configuration>
+    <list>
+      <item itemvalue="Application.CreateUser" />
+      <item itemvalue="Tomcat Server.Tomcat 10.1.48" />
+    </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Application.CreateUser" />
+      </list>
+    </recent_temporary>
   </component>
   <component name="SharedIndexes">
     <attachedChunks>
@@ -185,7 +203,7 @@
       <updated>1763172110971</updated>
       <workItem from="1763172112066" duration="6606000" />
       <workItem from="1763706359328" duration="9659000" />
-      <workItem from="1763774042937" duration="416000" />
+      <workItem from="1763774461256" duration="3666000" />
     </task>
     <servers />
   </component>
