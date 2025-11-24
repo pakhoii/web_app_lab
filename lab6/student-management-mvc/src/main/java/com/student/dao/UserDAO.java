@@ -157,6 +157,28 @@ public class UserDAO {
         }
     }
 
+    public boolean updateUserPassword(int userId, String newPassword) {
+        String sqlUpdatePassword = "UPDATE users SET password = ? WHERE id = ?";
+
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sqlUpdatePassword)) {
+
+            // Hash new password before storing
+            String hashedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
+
+            pstmt.setString(1, hashedPassword);
+            pstmt.setInt(2, userId);
+
+            pstmt.executeUpdate();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+
+        return true;
+    }
+
     /**
      * Map ResultSet to User object
      */
