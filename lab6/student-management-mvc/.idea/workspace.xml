@@ -9,15 +9,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="cf6e9c42-cc34-41d6-ade6-3d342c39068c" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/../../lab5/student-management-mvc/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../../lab5/student-management-mvc/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/report.md" beforeDir="false" afterPath="$PROJECT_DIR$/report.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/student/dao/UserDAO.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/student/dao/UserDAO.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/webapp/views/dashboard.jsp" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/webapp/views/dashboard.jsp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/webapp/views/student-list.jsp" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/webapp/views/student-list.jsp" afterDir="false" />
-    </list>
+    <list default="true" id="cf6e9c42-cc34-41d6-ade6-3d342c39068c" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -213,6 +205,7 @@
       <workItem from="1763782112975" duration="8000" />
       <workItem from="1763972202242" duration="707000" />
       <workItem from="1763987256837" duration="7510000" />
+      <workItem from="1764379095030" duration="145000" />
     </task>
     <servers />
   </component>
