@@ -5,11 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Product Form</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -27,69 +23,41 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
 
-        h1 {
-            color: #667eea;
-            margin-bottom: 30px;
-            text-align: center;
-        }
+        h1 { color: #667eea; margin-bottom: 30px; text-align: center; }
 
-        .form-group {
-            margin-bottom: 20px;
-        }
+        .form-group { margin-bottom: 20px; }
 
-        label {
-            display: block;
-            margin-bottom: 5px;
-            color: #333;
-            font-weight: 500;
-        }
+        label { display: block; margin-bottom: 5px; color: #333; font-weight: 500; }
 
         input, select, textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
+            width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;
         }
 
-        textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
+        textarea { resize: vertical; min-height: 100px; }
 
         .btn {
-            padding: 12px 30px;
-            border: none;
+            padding: 12px 30px; border: none; border-radius: 5px; cursor: pointer; text-decoration: none;
+            display: inline-block; margin-right: 10px; transition: all 0.3s;
+        }
+
+        .btn-primary { background-color: #667eea; color: white; }
+        .btn-primary:hover { background-color: #5568d3; }
+
+        .btn-secondary { background-color: #6c757d; color: white; }
+        .btn-secondary:hover { background-color: #5a6268; }
+
+        .button-group { margin-top: 30px; display: flex; justify-content: center; }
+
+        .error { border-color: red; }
+        .error-message { color: red; font-size: 12px; }
+
+        /* Style cho ảnh preview */
+        .current-image {
+            margin-top: 5px;
+            padding: 5px;
+            border: 1px dashed #ccc;
             border-radius: 5px;
-            cursor: pointer;
-            text-decoration: none;
             display: inline-block;
-            margin-right: 10px;
-            transition: all 0.3s;
-        }
-
-        .btn-primary {
-            background-color: #667eea;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background-color: #5568d3;
-        }
-
-        .btn-secondary {
-            background-color: #6c757d;
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background-color: #5a6268;
-        }
-
-        .button-group {
-            margin-top: 30px;
-            display: flex;
-            justify-content: center;
         }
     </style>
 </head>
@@ -97,17 +65,23 @@
 <div class="container">
     <h1 th:text="${product.id != null} ? '✏️ Edit Product' : '➕ Add New Product'">Product Form</h1>
 
-    <form th:action="@{/products/save}" th:object="${product}" method="post">
-        <!-- Hidden ID field for updates -->
+    <form th:action="@{/products/save}"
+          th:object="${product}"
+          method="post"
+          enctype="multipart/form-data">
+
         <input type="hidden" th:field="*{id}" />
+        <input type="hidden" th:field="*{imagePath}" />
 
         <div class="form-group">
             <label for="productCode">Product Code *</label>
             <input type="text"
                    id="productCode"
                    th:field="*{productCode}"
-                   placeholder="Enter product code (e.g., P001)"
-                   required />
+                   th:errorclass="error" />
+            <span th:if="${#fields.hasErrors('productCode')}"
+                  th:errors="*{productCode}"
+                  class="error-message">Error</span>
         </div>
 
         <div class="form-group">
@@ -154,6 +128,19 @@
         </div>
 
         <div class="form-group">
+            <label for="imageFile">Product Image</label>
+            <input type="file" id="imageFile" name="imageFile" class="form-control" accept="image/png, image/jpeg" />
+        </div>
+
+        <div th:if="${product.imagePath != null and product.imagePath != ''}" class="form-group">
+            <label>Current Image:</label>
+            <div class="current-image">
+                <img th:src="@{/uploads/{fileName}(fileName=${product.imagePath})}" style="max-width: 150px; height: auto;" />
+            </div>
+            <small style="color: #666; display: block; margin-top: 5px;">Leave file input empty to keep this image.</small>
+        </div>
+
+        <div class="form-group">
             <label for="description">Description</label>
             <textarea id="description"
                       th:field="*{description}"
@@ -162,7 +149,8 @@
 
         <div class="button-group">
             <button type="submit" class="btn btn-primary">💾 Save Product</button>
-            <a th:href="@{/products}" class="btn btn-secondary">❌ Cancel</a>
+
+            <a th:href="@{${returnPath != null ? returnPath : '/products'}}" class="btn btn-secondary">❌ Cancel</a>
         </div>
     </form>
 </div>

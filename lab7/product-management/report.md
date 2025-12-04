@@ -91,13 +91,13 @@ public class Product {
 }
 ```
 **Explanation:**
-* **Lombok:** `@Setter` and `@Getter` automatically create **setter** and **getter** methods, reducing repetitive **boilerplate code** for fields.
-* **MVC Role:** This class is the **Model** component, representing the **data structure** and **state** of a `Product` within the application.
-* **Data Mapping:** It uses **JPA annotations** like `@Entity` and `@Table` to map the Java class to a **database table** named `products`. 
-* **Primary Key:** The `@Id` and `@GeneratedValue` annotations define the **`id` field** as the **primary key** that is **auto-incremented**.
-* **Data Fields:** `@Column` maps fields to **table columns**, specifying constraints like **uniqueness**, **nullability**, and **length**.
-* **Timestamping:** The `@PrePersist` method **`onCreate()`** automatically sets the **`createdAt`** timestamp just before the entity is saved for the first time.
-* **Data Representation:** The **`toString()`** method provides a readable **string representation** of the `Product` object's state.
+- **Lombok:** The `@Setter` and `@Getter` annotations automatically generate setter and getter methods for all fields, reducing boilerplate code.
+- **MVC Role:** This class acts as the Model component, defining the data structure and state of the `Product` entity.
+- **Data Mapping:** The `@Entity` and `@Table` annotations map this class to the `products` table in the database.
+- **Primary Key:** The `@Id` and `@GeneratedValue` annotations specify the `id` field as the auto-incrementing primary key.
+- **Data Fields:** The `@Column` annotation configures table columns, including constraints like uniqueness, nullability, and length.
+- **Timestamping:** The `onCreate()` method, annotated with `@PrePersist`, automatically sets the `createdAt` timestamp before the entity is saved.
+- **Data Representation:** The `toString()` method provides a readable string representation of the `Product` object's state.
 
 #### Task 2.2: Create Product Repository
 **File:** `src/main/java/com/example/productmanagement/repository/ProductRepository.java`.
@@ -139,15 +139,11 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 ```
 
 **Explanation:**
-* **JPA Repository:** **Spring Data JPA** automatically creates the **implementation** for this interface at **runtime**.
-* **MVC Role:** This interface acts as the bridge between the **Model** (the `Product` entity) and the **database**.
-* **Core Function:** It extends **`JpaRepository`**, providing basic **CRUD** (Create, Read, Update, Delete) operations out of the box. 
-* **Default Methods:** It inherits methods like `save()`, `findById()`, and `findAll()` for standard **data access**.
-* **`findByCategory`:** Retrieves a list of **`Product`** entities where the **`category`** field matches the given string.
-* **`findByNameContaining`:** Finds products whose **`name`** field contains the specified **`keyword`** (case-insensitive by default).
-* **`findByPriceBetween`:** Fetches products whose **`price`** falls within the specified **minimum** and **maximum** range.
-* **`findByCategoryOrderByPriceAsc`:** Retrieves products by **category** and sorts the results by **`price`** in ascending order.
-* **`existsByProductCode`:** Checks the database and returns **`true`** if a product with the given **`productCode`** exists.
+- **JPA Repository:** This interface extends `JpaRepository`, inheriting standard CRUD operations without needing manual implementation.
+- **MVC Role:** It serves as the data access layer, mediating between the Service layer and the database.
+- **Custom Queries:** Methods like `findByCategory` and `findByNameContaining` automatically generate SQL queries based on their names.
+- **Advanced Search:** The `searchProducts` method uses the `@Query` annotation to define a custom JPQL query for filtering by multiple optional criteria.
+- **Flow:** Service calls repository method -> Repository translates to SQL -> Database executes query -> Results returned as Entity objects.
 
 #### Task 2.3: Test Repository
 ![alt text](images/image-4.png)
@@ -242,16 +238,11 @@ public class ProductServiceImpl implements ProductService {
 ```
 
 **Explanation:**
-* **`@Service` Annotation:** Marks this class as a **Service component** in the Spring application context, managing business logic.
-* **MVC Role:** It serves as the **Service layer**, sitting between the **Controller** (web) and the **Repository** (data access). 
-* **`@Transactional`:** Ensures that all methods are executed within a **single database transaction**, providing data integrity.
-* **Dependency Injection:** The **`ProductRepository`** is injected via the **constructor** using `@Autowired` for data access.
-* **`getAllProducts()`:** Delegates the call to the repository's **`findAll()`** method to retrieve every product.
-* **`getProductById()`:** Uses the repository's **`findById()`** method to fetch a product by its unique **ID**, wrapped in an `Optional`.
-* **`saveProduct()`:** Uses the repository's **`save()`** method for both **creating new** and **updating existing** products.
-* **`deleteProduct()`:** Executes the repository's **`deleteById()`** method to remove a product based on its ID.
-* **`searchProducts()`:** Calls the custom repository method **`findByNameContaining()`** to perform a name-based search.
-* **`getProductsByCategory()`:** Calls the custom repository method **`findByCategory()`** to filter products by their category.
+- **Service Component:** The `@Service` annotation marks this class as a business logic component in the Spring context.
+- **Transaction Management:** The `@Transactional` annotation ensures that methods run within a database transaction, maintaining data integrity.
+- **Dependency Injection:** The `ProductRepository` is injected via the constructor to enable database operations.
+- **Business Logic:** Methods like `getAllProducts` and `saveProduct` encapsulate the logic for retrieving and modifying product data.
+- **Flow:** Controller calls service method -> Service executes business logic -> Service calls repository -> Data returned to Controller.
 
 ### EXERCISE 4: CONTROLLER & VIEWS
 #### Task 4.1: Create Product Controller
@@ -348,19 +339,14 @@ public class ProductController {
 ```
 
 **Explanation:**
-* **`@Controller` Annotation:** Marks this class as a **Spring MVC controller**, responsible for handling web requests.
-* **MVC Role:** This is the **Controller** component, handling user **input** and defining which **view** (HTML) to render. 
-* **`@RequestMapping`:** Maps all methods in this class to the base URL **`/products`** for organization.
-* **Dependency Injection:** The **`ProductService`** is injected via the **constructor** using `@Autowired` to access business logic.
-* **`listProducts` (`GET /products`):** Fetches all products, adds them to the **`Model`**, and returns the **`product-list`** view.
-* **`showNewForm` (`GET /products/new`):** Creates an empty **`Product`** object, adds it to the **`Model`**, and shows the **`product-form`** view.
-* **`showEditForm` (`GET /products/edit/{id}`):** Retrieves a product by **ID**. If found, it populates the **`product-form`**; otherwise, it redirects with an error.
-* **`saveProduct` (`POST /products/save`):** Binds form data to a **`Product`** object, calls the service to save it, and redirects to the **list** page.
-* **`@ModelAttribute`:** Automatically binds the data from the HTTP request parameters to the **`Product`** object.
-* **`RedirectAttributes`:** Used to add temporary, session-scoped **flash messages** (success/error) before redirecting.
-* **`deleteProduct` (`GET /products/delete/{id}`):** Calls the service to delete the product by **ID** and redirects to the product **list**.
-* **`searchProducts` (`GET /products/search`):** Takes a **`keyword`** parameter, calls the service search method, and displays the results in **`product-list`**.
-* **`@RequestParam`:** Extracts the value of a specific query parameter (like `?keyword=...`) from the request URL.
+- **Controller Component:** The `@Controller` annotation identifies this class as a web controller that handles HTTP requests.
+- **Request Mapping:** The `@RequestMapping` annotation sets the base URL path for all endpoints in this controller.
+- **List Products:** The `listProducts` method handles GET requests to show all products.
+- **Flow (List):** User requests page -> Controller calls `getAllProducts` -> Adds list to Model -> Returns `product-list` view.
+- **Save Product:** The `saveProduct` method handles POST requests to create or update a product.
+- **Flow (Save):** User submits form -> Controller binds data to Product object -> Calls `saveProduct` service -> Redirects to list page.
+- **Search:** The `searchProducts` and `advancedSearch` methods handle filtering of products based on user input.
+- **Flow (Search):** User submits search -> Controller gets parameters -> Calls search service -> Adds results to Model -> Returns `product-list` view.
 
 #### Task 4.2: Create Product List View
 **File:** `src/main/resources/templates/product-list.html`
@@ -755,3 +741,91 @@ public class ProductController {
 
 ![alt text](images/image-7.png)
 ![alt text](images/image-8.png)
+
+---
+## PART B: HOMEWORK EXERCISES
+### EXERCISE 5: ADVANCED SEARCH
+#### Task 5.1: Multi-Criteria Search
+`repository/ProductRepository.java`
+
+```java
+@Query("SELECT p FROM Product p WHERE " +
+        "(:name IS NULL OR :name = '' OR " +
+        "LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))) AND " +
+        "(:category IS NULL OR :category = '' OR p.category = :category) AND " +
+        "(:minPrice IS NULL OR p.price >= :minPrice) AND " +
+        "(:maxPrice IS NULL OR p.price <= :maxPrice)")
+Page<Product> advanceSearch(@Param("name") String name,
+                                @Param("category") String category,
+                                @Param("minPrice") BigDecimal minPrice,
+                                @Param("maxPrice") BigDecimal maxPrice
+                            , Pageable pageable);
+```
+
+`service/ProductServiceImpl.java`
+
+```java
+@Override
+public Page<Product> advanceSearch(String name, String category, BigDecimal minPrice, BigDecimal maxPrice, Pageable pageable) {
+    return productRepository.advanceSearch(name, category, minPrice, maxPrice, pageable);
+}
+```
+
+`controller/ProductController`
+
+```java
+@GetMapping("/advanced-search")
+public String advancedSearch(
+        @RequestParam(required = false) String name,
+        @RequestParam(required = false) String category,
+        @RequestParam(required = false) BigDecimal minPrice,
+        @RequestParam(required = false) BigDecimal maxPrice,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size,
+        @RequestParam(required = false) String sortBy,
+        @RequestParam(defaultValue = "asc") String sortDir,
+        Model model) {
+
+    Pageable pageable;
+
+    if (sortBy != null) {
+        Sort sort = sortDir.equals("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        pageable = PageRequest.of(page, size, sort);
+    } else {
+        pageable = PageRequest.of(page, size);
+    }
+
+    Page<Product> products = productService.advanceSearch(name, category, minPrice, maxPrice, pageable);
+
+    model.addAttribute("products", products);
+    model.addAttribute("name", name);
+    model.addAttribute("selectedCategory", category);
+    model.addAttribute("minPrice", minPrice);
+    model.addAttribute("maxPrice", maxPrice);
+    model.addAttribute("sortBy", sortBy);
+    model.addAttribute("sortDir", sortDir);
+
+    model.addAttribute("baseUrl", "/products/advanced-search");
+
+    addCommonAttributes(model);
+
+    return "product-list";
+}
+```
+
+**Explanation:**
+
+#### Task 5.2: Category Filter
+`repository/ProductRepository.java`
+
+```java
+@Override
+public List<String> getAllCategories() {
+    return productRepository.findAllCategories();
+}
+```
+
+`service/ProductServiceImpl.java`
+```
+
+```

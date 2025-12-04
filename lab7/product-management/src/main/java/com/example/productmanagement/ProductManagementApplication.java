@@ -17,25 +17,25 @@ public class ProductManagementApplication {
     }
 
     // Temporary test - remove after verification
-    @Bean
-    CommandLineRunner test(ProductRepository repository) {
-        return args -> {
-            System.out.println("=== Testing Repository ===");
-
-            // Count all products
-            long count = repository.count();
-            System.out.println("Total products: " + count);
-
-            // Find all products
-            List<Product> products = repository.findAll();
-            products.forEach(System.out::println);
-
-            // Find by category
-            List<Product> electronics = repository.findByCategory("Electronics");
-            System.out.println("\nElectronics: " + electronics.size());
-
-            System.out.println("=== Test Complete ===");
-        };
-    }
+//    @Bean
+//    CommandLineRunner test(ProductRepository repository) {
+//        return args -> {
+//            System.out.println("=== Testing Repository ===");
+//
+//            // Count all products
+//            long count = repository.count();
+//            System.out.println("Total products: " + count);
+//
+//            // Find all products
+//            List<Product> products = repository.findAll();
+//            products.forEach(System.out::println);
+//
+//            // Find by category
+//            List<Product> electronics = repository.findByCategory("Electronics");
+//            System.out.println("\nElectronics: " + electronics.size());
+//
+//            System.out.println("=== Test Complete ===");
+//        };
+//    }
 }
 
