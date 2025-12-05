@@ -771,7 +771,7 @@ public Page<Product> advanceSearch(String name, String category, BigDecimal minP
 }
 ```
 
-`controller/ProductController`
+`controller/ProductController.java`
 
 ```java
 @GetMapping("/advanced-search")
@@ -814,9 +814,21 @@ public String advancedSearch(
 ```
 
 **Explanation:**
+![alt text](images/image-9.png)
+- **Repository:** The `advanceSearch` method uses a custom JPQL `@Query` to handle multiple optional criteria. The logic `(:param IS NULL OR p.field = :param)` allows ignoring null parameters, effectively constructing a dynamic query.
+- **Service:** The service layer simply delegates the call to the repository, passing all search parameters and the `Pageable` object.
+- **Controller:** The `advancedSearch` method captures request parameters (name, category, price range) and pagination info. It creates a `Pageable` object and calls the service. The results and search criteria are added to the `Model` to repopulate the form and display results.
+- **Workflow:** User fills the advanced search form -> Submits GET request to `/products/advanced-search` -> Controller processes parameters -> Service -> Repository executes filtered query -> Results displayed in `product-list.html`.
 
 #### Task 5.2: Category Filter
 `repository/ProductRepository.java`
+
+```java
+@Query("SELECT DISTINCT p.category FROM Product p ORDER BY p.category")
+List<String> findAllCategories();
+```
+
+`service/ProductServiceImpl.java`
 
 ```java
 @Override
@@ -825,7 +837,558 @@ public List<String> getAllCategories() {
 }
 ```
 
-`service/ProductServiceImpl.java`
+`controller/ProductController.java`
+```java
+// Helper method to add common attributes like categories
+private void addCommonAttributes(Model model) {
+    List<String> categories = productService.getAllCategories();
+    model.addAttribute("categories", categories);
+}
+
+@GetMapping
+public String listProducts(@RequestParam(value = "category", required = false) String category,
+                            @RequestParam(defaultValue = "0") int page,
+                            @RequestParam(defaultValue = "10") int size,
+                            @RequestParam(required = false) String sortBy,
+                            @RequestParam(defaultValue = "asc") String sortDir,
+                            Model model) {
+    Page<Product> products;
+    Pageable pageable;
+
+    if (sortBy != null) {
+        Sort sort = sortDir.equals("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        pageable = PageRequest.of(page, size, sort);
+    } else {
+        pageable = PageRequest.of(page, size);
+    }
+
+    if (category == null || category.isEmpty()) {
+        products = productService.getAllProducts(pageable);
+    } else {
+        products = productService.getProductsByCategory(category, pageable);
+    }
+
+    // Add attributes
+    model.addAttribute("products", products);
+    model.addAttribute("selectedCategory", category);
+    model.addAttribute("baseUrl", "/products");
+    model.addAttribute("sortBy", sortBy);
+    model.addAttribute("sortDir", sortDir);
+
+    addCommonAttributes(model);
+
+    return "product-list";
+}
 ```
 
+View
+![alt text](images/image-10.png)
+```java
+<!--Filter-->
+<form th:action="@{/products}" method="get">
+    <select name="category" onchange="this.form.submit()">
+        <option value="">All Categories</option>
+        <option th:each="cat : ${categories}"
+                th:value="${cat}"
+                th:text="${cat}"
+                th:selected="${cat == selectedCategory}">
+        </option>
+    </select>
+</form>
 ```
+
+**Explanation:**
+- **Repository:** `findAllCategories` retrieves a list of all distinct categories present in the database to populate the filter dropdown.
+- **Controller:** The `addCommonAttributes` helper method ensures the category list is available on all views. The `listProducts` method checks if a `category` parameter is present. If so, it calls `getProductsByCategory`; otherwise, it calls `getAllProducts`.
+- **View:** A `<select>` element with `onchange="this.form.submit()"` automatically triggers a form submission whenever the user selects a different category, reloading the page with the filtered results.
+- **Workflow:** User selects a category -> Browser sends GET request with `?category=Value` -> Controller detects parameter -> Fetches filtered data -> View renders only products in that category.
+
+
+#### Task 5.3: Search with Pagination
+`controller/ProductController.java`
+
+```java
+@GetMapping("/search")
+public String searchProducts(@RequestParam("keyword") String keyword,
+                                @RequestParam(defaultValue = "0") int page,
+                                @RequestParam(defaultValue = "10") int size,
+                                @RequestParam(required = false) String sortBy,
+                                @RequestParam(defaultValue = "asc") String sortDir,
+                                Model model) {
+
+    Pageable pageable;
+
+    if (sortBy != null) {
+        Sort sort = sortDir.equals("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        pageable = PageRequest.of(page, size, sort);
+    } else {
+        pageable = PageRequest.of(page, size);
+    }
+
+    Page<Product> products = productService.searchProducts(keyword, pageable);
+
+    model.addAttribute("products", products);
+    model.addAttribute("keyword", keyword);
+    model.addAttribute("baseUrl", "/products/search");
+    model.addAttribute("sortBy", sortBy);
+    model.addAttribute("sortDir", sortDir);
+
+    addCommonAttributes(model);
+
+    return "product-list";
+}
+```
+
+**Explanation:**
+![alt text](images/image-11.png)
+- **Pagination Support:** The `Pageable` interface (specifically `PageRequest`) is used to request a specific slice of data (page number and size).
+- **Repository & Service:** Methods return `Page<Product>` instead of `List<Product>`, providing metadata like total pages and total elements along with the content.
+- **Controller:** Accepts `page` and `size` parameters (defaulting to 0 and 10). It adds the `Page` object to the model.
+- **View:** The view uses `productPage.totalPages` and `currentPage` to generate pagination buttons (Previous, Next, Page Numbers), allowing users to navigate through large datasets.
+- **Workflow:** User clicks a page number -> GET request `?page=1` -> Controller requests page 1 from Service -> Repository returns partial result -> View displays the requested subset of products.
+
+### EXERCISE 6: VALIDATION
+#### Task 6.1: Add Validation Annotations
+Updated `entity/Product.java`
+
+```java
+package com.example.productmanagement.entity;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+@Setter // Lombok: generate setters without writing boilerplate code
+@Getter // Lombok: generate getters without writing boilerplate code
+@Entity
+@Table(name = "products")
+public class Product {
+    // Getters and Setters
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Size(min = 3, max = 20, message = "Product code must be 3-20 characters")
+    @Pattern(regexp = "^P\\d{3,}$", message = "Product code must start with P followed by numbers")
+    @NotBlank(message = "Product code is required")
+    @Column(name = "product_code", unique = true, nullable = false, length = 20)
+    private String productCode;
+
+    @NotBlank(message = "Product name is required")
+    @Size(min = 3, max = 100, message = "Name must be 3-100 characters")
+    @Column(nullable = false, length = 100)
+    private String name;
+
+    @NotNull(message = "Price is required")
+    @DecimalMin(value = "0.01", message = "Price must be greater than 0")
+    @DecimalMax(value = "999999.99", message = "Price is too high")
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal price;
+
+    @NotNull(message = "Quantity is required")
+    @Min(value = 0, message = "Quantity cannot be negative")
+    @Column(nullable = false)
+    private Integer quantity;
+
+    @NotBlank(message = "Category is required")
+    @Column(length = 50)
+    private String category;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    private String imagePath;
+
+    // Constructors
+    public Product() {
+    }
+
+    public Product(String productCode, String name, BigDecimal price, Integer quantity, String category, String description) {
+        this.productCode = productCode;
+        this.name = name;
+        this.price = price;
+        this.quantity = quantity;
+        this.category = category;
+        this.description = description;
+    }
+
+    // Lifecycle callback
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
+
+    @Override
+    public String toString() {
+        return "Product{" +
+                "id=" + id +
+                ", productCode='" + productCode + '\'' +
+                ", name='" + name + '\'' +
+                ", price=" + price +
+                ", quantity=" + quantity +
+                ", category='" + category + '\'' +
+                '}';
+    }
+}
+```
+
+**Explanation:**
+- **Validation Constraints:** We use Jakarta Validation annotations to enforce data integrity at the entity level.
+- **@NotBlank:** Ensures strings are not null or empty.
+- **@Size:** Enforces minimum and maximum length.
+- **@Pattern:** Validates against a regular expression (e.g., Product Code format).
+- **@Min/@DecimalMin:** Ensures numeric values meet minimum requirements (e.g., non-negative quantity, positive price).
+- **Workflow:** When a `Product` object is validated, these constraints are checked. If any fail, a validation error is raised.
+
+#### Task 6.2: Add Validation in Controller
+
+```java
+import jakarta.validation.Valid;
+import org.springframework.validation.BindingResult;
+
+@PostMapping("/save")
+public String saveProduct(
+    @Valid @ModelAttribute("product") Product product,
+    BindingResult result,
+    Model model,
+    RedirectAttributes redirectAttributes) {
+    
+    if (result.hasErrors()) {
+        return "product-form";
+    }
+    
+    try {
+        productService.saveProduct(product);
+        redirectAttributes.addFlashAttribute("message", "Product saved successfully!");
+    } catch (Exception e) {
+        redirectAttributes.addFlashAttribute("error", "Error: " + e.getMessage());
+    }
+    
+    return "redirect:/products";
+}
+```
+
+**Explanation:**
+- **@Valid Annotation:** Triggers the validation process for the `product` object before the method body is executed.
+- **BindingResult:** Captures any validation errors. We check `result.hasErrors()` to see if validation failed.
+- **Error Handling:** If errors exist, we return the user to the `product-form` view so they can correct the input. The `BindingResult` (containing the errors) is automatically available to the view.
+- **Workflow:** User submits form -> Controller validates input -> If invalid, show form with errors; If valid, save product and redirect to list.
+
+
+#### Task 6.3: Display Validation Errors
+
+**View Update:** `product-form.html`
+
+```html
+<div class="form-group">
+    <label for="productCode">Product Code *</label>
+    <input type="text" 
+           id="productCode" 
+           th:field="*{productCode}" 
+           th:errorclass="error" />
+    <span th:if="${#fields.hasErrors('productCode')}" 
+          th:errors="*{productCode}" 
+          class="error-message">Error</span>
+</div>
+```
+
+**CSS Update:**
+```css
+.error { border-color: red; }
+.error-message { color: red; font-size: 12px; }
+```
+
+**Explanation:**
+![alt text](images/image-12.png)
+- **th:errorclass:** Conditionally adds the `error` CSS class to the input field if it has validation errors (e.g., making the border red).
+- **th:errors:** Displays the specific validation error message associated with the field (e.g., "Product code is required").
+- **User Feedback:** This provides immediate, specific feedback to the user about what went wrong, improving the user experience.
+
+### EXERCISE 7: SORTING & FILTERING
+`controller/ProductController.java`
+
+```java
+@GetMapping
+public String listProducts(@RequestParam(value = "category", required = false) String category,
+                            @RequestParam(defaultValue = "0") int page,
+                            @RequestParam(defaultValue = "10") int size,
+                            @RequestParam(required = false) String sortBy,
+                            @RequestParam(defaultValue = "asc") String sortDir,
+                            Model model) {
+    Page<Product> products;
+    Pageable pageable;
+
+    if (sortBy != null) {
+        Sort sort = sortDir.equals("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        pageable = PageRequest.of(page, size, sort);
+    } else {
+        pageable = PageRequest.of(page, size);
+    }
+
+    if (category == null || category.isEmpty()) {
+        products = productService.getAllProducts(pageable);
+    } else {
+        products = productService.getProductsByCategory(category, pageable);
+    }
+
+    // Add attributes
+    model.addAttribute("products", products);
+    model.addAttribute("selectedCategory", category);
+    model.addAttribute("baseUrl", "/products");
+    model.addAttribute("sortBy", sortBy);
+    model.addAttribute("sortDir", sortDir);
+
+    addCommonAttributes(model);
+
+    return "product-list";
+}
+```
+
+View
+```html
+<th>
+    <a th:href="@{/products(sortBy='name',sortDir=${sortDir=='asc'?'desc':'asc'})}">
+        Name
+        <span th:if="${sortBy=='name'}" th:text="${sortDir=='asc'?'↑':'↓'}"></span>
+    </a>
+</th>
+```
+![alt text](images/image-13.png)
+
+**Explanation:**
+- **Sorting Logic:** The controller checks for `sortBy` and `sortDir` parameters. It creates a Spring Data `Sort` object (ascending or descending) and passes it to the repository via the `PageRequest`.
+- **View Links:** The table headers are converted into clickable links. The `th:href` dynamically toggles the sort direction (if currently 'asc', the link sets it to 'desc', and vice versa).
+- **Visual Indicator:** A small arrow (↑ or ↓) is displayed next to the currently sorted column to indicate the direction.
+- **Workflow:** User clicks "Price" header -> GET request `?sortBy=price&sortDir=asc` -> Controller sorts by price ascending -> View displays products cheapest to most expensive.
+
+### EXERCISE 8: STATISTICS DASHBOARD
+
+`repository/ProductRepository.java`
+
+```java
+@Query("SELECT DISTINCT p.category FROM Product p ORDER BY p.category")
+List<String> findAllCategories();
+
+@Query("SELECT COUNT(p) FROM Product p WHERE p.category = :category")
+long countByCategory(@Param("category") String category);
+
+@Query("SELECT SUM(p.price * p.quantity) FROM Product p")
+BigDecimal calculateTotalValue();
+
+@Query("SELECT AVG(p.price) FROM Product p")
+BigDecimal calculateAveragePrice();
+
+@Query("SELECT p FROM Product p WHERE p.quantity < :threshold")
+List<Product> findLowStockProducts(@Param("threshold") int threshold);
+```
+
+`controller/DashboardController.java`
+
+```java
+@Controller
+@RequestMapping("/dashboard")
+public class DashboardController {
+
+    private final ProductService productService;
+
+    @Autowired
+    public DashboardController(ProductService productService) {
+        this.productService = productService;
+    }
+
+    @GetMapping
+    public String showDashboard(Model model) {
+        // Total products count
+        long totalProducts = productService.getAllProducts().size();
+        model.addAttribute("totalProducts", totalProducts);
+
+        // Total inventory value
+        BigDecimal totalValue = productService.getTotalValue();
+        model.addAttribute("totalValue", totalValue != null ? totalValue : BigDecimal.ZERO);
+
+        // Average product price
+        BigDecimal avgPrice = productService.getAveragePrice();
+        model.addAttribute("avgPrice", avgPrice != null ? avgPrice : BigDecimal.ZERO);
+
+        // Low stock alerts
+        List<Product> lowStockProducts = productService.getLowStockProducts(10);
+        model.addAttribute("lowStockProducts", lowStockProducts);
+        model.addAttribute("lowStockCount", lowStockProducts.size());
+
+        // Recent products (last 5 added)
+        List<Product> recentProducts = productService.getAllProducts(
+                PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "id"))
+        ).getContent();
+        model.addAttribute("recentProducts", recentProducts);
+
+        // Products by categor
+        List<String> categories = productService.getAllCategories();
+        Map<String, Long> categoryStats = new HashMap<>();
+
+        if (categories != null) {
+            for (String cat : categories) {
+                long count = productService.getProductCountByCategory(cat);
+                categoryStats.put(cat, count);
+            }
+        }
+        model.addAttribute("categoryStats", categoryStats);
+
+        return "dashboard";
+    }
+}
+```
+
+**Explanation:**
+- **Repository:** Custom JPQL queries calculate aggregate statistics: `COUNT` for total products/categories, `SUM` for inventory value, and `AVG` for average price. A query also identifies low-stock items.
+- **Controller:** The `DashboardController` calls these service methods to gather all the statistics. It also prepares data for the chart (category distribution).
+- **View:** `dashboard.html` presents this data using:
+    - **Cards:** For key performance indicators (KPIs).
+    - **Chart.js:** To visualize the product distribution by category.
+    - **Table:** To list low-stock items with a "Restock" action.
+- **Workflow:** User accesses `/dashboard` -> Controller fetches stats -> View renders the dashboard with charts and tables.
+
+---
+## BONUS EXERCISES
+### BONUS 1: REST API Endpoints
+
+```java
+@RestController
+@RequestMapping("/api/products")
+public class ProductRestController {
+
+    private final ProductService productService;
+
+    @Autowired
+    public ProductRestController(ProductService productService) {
+        this.productService = productService;
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Product>> getAllProducts() {
+        // Return JSON
+        List<Product> products = productService.getAllProducts();
+        return ResponseEntity.ok(products);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Product> getProduct(@PathVariable Long id) {
+        // Return single product or 404
+        return productService.getProductById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping
+    public ResponseEntity<Product> createProduct(@RequestBody Product product) {
+        // Create and return 201
+        Product newProduct = productService.saveProduct(product);
+        return ResponseEntity.status(201).body(newProduct);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Product> updateProduct(@PathVariable Long id, @RequestBody Product product) {
+        // Update and return
+        return productService.getProductById(id)
+                .map(existingProduct -> {
+                    product.setId(id);
+                    Product updatedProduct = productService.saveProduct(product);
+                    return ResponseEntity.ok(updatedProduct);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
+        // Delete and return 204
+        return productService.getProductById(id)
+                .map(existingProduct -> {
+                    productService.deleteProduct(id);
+                    return ResponseEntity.noContent().<Void>build();
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+}
+```
+
+**Explanation:**
+- **@RestController:** Combines `@Controller` and `@ResponseBody`, meaning methods return data (JSON) directly instead of views.
+- **Endpoints:**
+    - `GET /api/products`: Returns list of all products.
+    - `GET /api/products/{id}`: Returns a single product.
+    - `POST /api/products`: Creates a new product.
+    - `PUT /api/products/{id}`: Updates an existing product.
+    - `DELETE /api/products/{id}`: Deletes a product.
+- **ResponseEntity:** Wraps the response body and HTTP status code (e.g., 200 OK, 201 Created, 404 Not Found), providing full control over the HTTP response.
+
+### BONUS 2: Image Upload
+
+**Explanation:**
+- **MultipartFile:** Spring interface to handle uploaded files.
+- **File Storage:** The `saveImage` helper method generates a unique filename (using UUID) to prevent collisions and saves the file to the `uploads/` directory on the server.
+- **Entity Update:** The filename is stored in the `imagePath` field of the `Product` entity.
+- **Workflow:** User selects file in form -> Form submits with `enctype="multipart/form-data"` -> Controller receives file -> Saves file to disk -> Saves product with filename -> Image displayed in list/details.
+
+```java
+private String saveImage(MultipartFile file, String name) throws IOException {
+    Path uploadPath = Paths.get(UPLOAD_DIR);
+
+    // Create the directory if it doesn't exist
+    if (!Files.exists(uploadPath)) {
+        Files.createDirectories(uploadPath);
+    }
+
+    // Sanitize the product name to be safe for filenames (remove spaces/special chars)
+    String safeName = name.replaceAll("[^a-zA-Z0-9.\\-]", "_");
+    String originalFileName = file.getOriginalFilename();
+    String fileExtension = "";
+    int dotIndex = originalFileName.lastIndexOf(".");
+    if (dotIndex > 0) {
+        fileExtension = originalFileName.substring(dotIndex);
+    }
+    String fileName = safeName + "_" + UUID.randomUUID().toString() + fileExtension;
+
+    // Save the file
+    Path filePath = uploadPath.resolve(fileName);
+
+    // Use StandardCopyOption.REPLACE_EXISTING to avoid errors if file exists
+    Files.copy(file.getInputStream(), filePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+    System.out.println("File saved to: " + filePath.toString());
+    return fileName;
+}
+
+@PostMapping("/save")
+public String saveProduct(@Valid @ModelAttribute("product") Product product,
+                            BindingResult result,
+                            @RequestParam("imageFile") MultipartFile imageFile,
+                            RedirectAttributes redirectAttributes) {
+
+    if (result.hasErrors()) {
+        return "product-form";
+    }
+
+    try {
+        if (!imageFile.isEmpty()) {
+            String filename = saveImage(imageFile, product.getName());
+            product.setImagePath(filename);
+            System.out.println(product.getImagePath());
+        } else if (product.getId() == null) {
+            product.setImagePath("default.jpg");
+        }
+
+        productService.saveProduct(product);
+        redirectAttributes.addFlashAttribute("message",
+                product.getId() == null ? "Product added successfully!" : "Product updated successfully!");
+    } catch (Exception e) {
+        redirectAttributes.addFlashAttribute("error", "Error saving product: " + e.getMessage());
+    }
+    return "redirect:/products";
+}
+```
+
